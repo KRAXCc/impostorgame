@@ -50,4 +50,57 @@ socket.on('updatePlayers', ({ players, hostId }) => {
 
   players.forEach(player => {
     const div = document.createElement('div');
-    div.textContent = player.name + (player.id === hostId ? ' (host)'
+    div.textContent = player.name + (player.id === hostId ? ' (host)' : '');
+    if (isHost && player.id !== hostId) {
+      const kickBtn = document.createElement('button');
+      kickBtn.textContent = 'Wyrzuć';
+      kickBtn.className = 'kick';
+      kickBtn.onclick = () => {
+        socket.emit('kickPlayer', { lobbyCode, playerId: player.id });
+      };
+      div.appendChild(kickBtn);
+    }
+    list.appendChild(div);
+  });
+});
+
+socket.on('start', ({ word, isImpostor }) => {
+  document.getElementById('gameStatus').innerText = 'Gra rozpoczęta!';
+  document.getElementById('wordDisplay').innerText = isImpostor ? `Jesteś IMPOSTOREM, zgadnij słowo!` : `Twoje słowo: ${word}`;
+  document.getElementById('voteSection').style.display = 'none';
+  document.getElementById('result').innerText = '';
+});
+
+socket.on('gameStarted', () => {
+  document.getElementById('gameStatus').innerText = 'Gra w toku...';
+  document.getElementById('voteSection').style.display = 'none';
+  document.getElementById('result').innerText = '';
+});
+
+socket.on('voting', (playerNames) => {
+  document.getElementById('gameStatus').innerText = 'Głosowanie!';
+  const voteButtons = document.getElementById('voteButtons');
+  voteButtons.innerHTML = '';
+  playerNames.forEach(name => {
+    const btn = document.createElement('button');
+    btn.textContent = name;
+    btn.onclick = () => {
+      socket.emit('vote', { voted: name, lobbyCode });
+      document.getElementById('voteSection').style.display = 'none';
+      document.getElementById('gameStatus').innerText = 'Czekamy na wyniki...';
+    };
+    voteButtons.appendChild(btn);
+  });
+  document.getElementById('voteSection').style.display = 'block';
+});
+
+socket.on('result', (msg) => {
+  document.getElementById('result').innerText = msg;
+  document.getElementById('voteSection').style.display = 'none';
+  document.getElementById('gameStatus').innerText = 'Gra zakończona.';
+});
+
+socket.on('kicked', () => {
+  alert('Zostałeś wyrzucony z lobby!');
+  location.reload();
+});
