@@ -9,11 +9,15 @@
 <style>
   body { font-family: sans-serif; background: #222; color: #eee; padding: 20px; }
   #game { max-width: 600px; margin: auto; background: #333; padding: 20px; border-radius: 10px; }
-  input, button { font-size: 1rem; padding: 0.5rem; margin: 5px 0; }
+  input, button, textarea { font-size: 1rem; padding: 0.5rem; margin: 5px 0; }
   button { cursor: pointer; }
   #playersList button.kick { margin-left: 10px; background: #c00; color: white; border: none; padding: 3px 6px; border-radius: 4px;}
   #hostControls { margin: 15px 0; }
   #voteSection button { margin: 5px; }
+  #chat { background: #111; padding: 10px; height: 200px; overflow-y: auto; margin-bottom: 10px; border-radius: 6px; }
+  #chat p { margin: 5px 0; }
+  #chatForm { display: flex; }
+  #chatInput { flex-grow: 1; }
 </style>
 </head>
 <body>
@@ -25,26 +29,35 @@
       <input type="text" id="lobbyCode" placeholder="Kod lobby" />
       <button onclick="createLobby()">Stwórz lobby</button>
       <button onclick="joinLobby()">Dołącz do lobby</button>
-      <div id="error" style="color:#f88; margin-top:10px;"></div>
+      <p id="error" style="color: #f33;"></p>
+      <p id="lobbyInfo"></p>
     </div>
 
-    <div id="gameArea" style="display:none;">
-      <h2 id="gameStatus"></h2>
-      <div id="wordDisplay" style="margin: 10px 0; font-weight: bold;"></div>
-
-      <div id="hostControls" style="display:none;">
-        <button id="startGameBtn">Startuj grę</button>
-      </div>
-
+    <div id="lobbyUI" style="display:none;">
+      <h2>Lobby: <span id="code"></span></h2>
       <div id="playersList"></div>
 
-      <div id="voteSection" style="display:none;">
-        <h3>Głosuj na impostora:</h3>
-        <div id="voteButtons"></div>
+      <div id="hostControls" style="display:none;">
+        <button onclick="startGame()">Start gry</button>
+        <button onclick="skipTurn()">Pomiń turę (Skip)</button>
       </div>
-
-      <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
     </div>
+
+    <div id="gameStatus"></div>
+    <div id="wordDisplay"></div>
+
+    <div id="chat"></div>
+    <form id="chatForm" onsubmit="sendMessage(event)">
+      <input type="text" id="chatInput" autocomplete="off" />
+      <button type="submit" id="chatSendBtn">Wyślij</button>
+    </form>
+
+    <div id="voteSection" style="display:none;">
+      <h3>Głosowanie - kto jest impostorem?</h3>
+      <div id="voteButtons"></div>
+    </div>
+
+    <div id="result"></div>
   </div>
 </body>
 </html>
