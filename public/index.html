@@ -1,30 +1,49 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Impostor Game</title>
-    <link rel="stylesheet" href="style.css" />
-    <script defer src="/socket.io/socket.io.js"></script>
-    <script defer src="script.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Impostor Game</title>
+<script defer src="/socket.io/socket.io.js"></script>
+<script defer src="script.js"></script>
+<style>
+  body { font-family: sans-serif; background: #222; color: #eee; padding: 20px; }
+  #game { max-width: 600px; margin: auto; background: #333; padding: 20px; border-radius: 10px; }
+  input, button { font-size: 1rem; padding: 0.5rem; margin: 5px 0; }
+  button { cursor: pointer; }
+  #playersList button.kick { margin-left: 10px; background: #c00; color: white; border: none; padding: 3px 6px; border-radius: 4px;}
+  #hostControls { margin: 15px 0; }
+  #voteSection button { margin: 5px; }
+</style>
 </head>
 <body>
   <div id="game">
-    <h1>Gra Impostora</h1>
+    <h1>Gra Impostor</h1>
+
     <div id="lobby">
       <input type="text" id="playerName" placeholder="Twoje imię" />
-      <input type="text" id="lobbyCode" placeholder="Kod pokoju" />
+      <input type="text" id="lobbyCode" placeholder="Kod lobby" />
       <button onclick="createLobby()">Stwórz lobby</button>
       <button onclick="joinLobby()">Dołącz do lobby</button>
+      <div id="error" style="color:#f88; margin-top:10px;"></div>
     </div>
-    <div id="gameArea" style="display:none">
+
+    <div id="gameArea" style="display:none;">
       <h2 id="gameStatus"></h2>
-      <div id="wordDisplay"></div>
-      <div id="voteSection" style="display:none">
-        <h3>Głosuj na impostora:</h3>
-        <div id="playersList"></div>
+      <div id="wordDisplay" style="margin: 10px 0; font-weight: bold;"></div>
+
+      <div id="hostControls" style="display:none;">
+        <button id="startGameBtn">Startuj grę</button>
       </div>
-      <div id="result" style="display:none"></div>
+
+      <div id="playersList"></div>
+
+      <div id="voteSection" style="display:none;">
+        <h3>Głosuj na impostora:</h3>
+        <div id="voteButtons"></div>
+      </div>
+
+      <div id="result" style="margin-top: 20px; font-weight: bold;"></div>
     </div>
   </div>
 </body>
