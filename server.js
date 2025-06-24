@@ -17,7 +17,6 @@ function getRandomWord() {
 }
 
 io.on('connection', (socket) => {
-  // Powiedz klientowi jego socket.id
   socket.emit('yourId', socket.id);
 
   socket.on('createLobby', (playerName) => {
@@ -29,6 +28,9 @@ io.on('connection', (socket) => {
       impostor: null,
       word: null,
       votes: {},
+      chatQueueIndex: 0, // kto ma teraz pisać
+      chatMessages: [],
+      guessed: false,
     };
     socket.join(lobbyCode);
     socket.emit('lobbyCreated', lobbyCode);
@@ -67,34 +69,104 @@ io.on('connection', (socket) => {
     lobby.started = true;
     lobby.word = getRandomWord();
     lobby.impostor = lobby.players[Math.floor(Math.random() * lobby.players.length)];
+    lobby.votes = {};
+    lobby.chatQueueIndex = 0;
+    lobby.chatMessages = [];
+    lobby.guessed = false;
 
     lobby.players.forEach(player => {
       const isImpostor = player.id === lobby.impostor.id;
       io.to(player.id).emit('start', { word: lobby.word, isImpostor });
     });
 
-    setTimeout(() => {
-      io.to(lobbyCode).emit('voting', lobby.players.map(p => p.name));
-    }, 30000);
-
     io.to(lobbyCode).emit('gameStarted');
+    io.to(lobbyCode).emit('updatePlayers', {
+      players: lobby.players,
+      hostId: lobby.hostId,
+    });
+    io.to(lobbyCode).emit('chatMessages', lobby.chatMessages);
+
+    // Poinformuj, kto teraz pisze
+    io.to(lobbyCode).emit('chatTurn', lobby.players[lobby.chatQueueIndex].id);
+  });
+
+  // Obsługa wiadomości czatu
+  socket.on('sendMessage', ({ lobbyCode, message }) => {
+    lobbyCode = lobbyCode.toUpperCase();
+    const lobby = lobbies[lobbyCode];
+    if (!lobby || !lobby.started) return;
+
+    // Sprawdz kto ma turę
+    if (socket.id !== lobby.players[lobby.chatQueueIndex].id) {
+      socket.emit('errorMsg', 'Nie twoja tura na pisanie!');
+      return;
+    }
+
+    const player = lobby.players.find(p => p.id === socket.id);
+    if (!player) return;
+
+    // Sprawdź czy impostor próbuje zgadnąć hasło
+    if (socket.id === lobby.impostor.id) {
+      if (message.trim().toLowerCase() === lobby.word.toLowerCase()) {
+        // Impostor wygrał
+        lobby.guessed = true;
+        io.to(lobbyCode).emit('result', `IMPOSTOR (${player.name}) odgadł hasło i wygrywa!`);
+        lobby.started = false;
+        return;
+      } else if (message.trim() !== '') {
+        // Błędne zgadnięcie = przegrana impostora
+        lobby.guessed = true;
+        io.to(lobbyCode).emit('result', `IMPOSTOR (${player.name}) podał błędne hasło i przegrywa! Gracze wygrywają.`);
+        lobby.started = false;
+        return;
+      }
+    }
+
+    // Dodaj wiadomość do czatu
+    lobby.chatMessages.push({ sender: player.name, message });
+    io.to(lobbyCode).emit('chatMessages', lobby.chatMessages);
+
+    // Przekaż turę następnemu graczowi
+    lobby.chatQueueIndex++;
+    if (lobby.chatQueueIndex >= lobby.players.length) lobby.chatQueueIndex = 0;
+
+    io.to(lobbyCode).emit('chatTurn', lobby.players[lobby.chatQueueIndex].id);
+  });
+
+  // Skip tura - host może pominąć turę i dać kolejnemu pisać z tym samym słowem
+  socket.on('skipTurn', (lobbyCode) => {
+    lobbyCode = lobbyCode.toUpperCase();
+    const lobby = lobbies[lobbyCode];
+    if (!lobby) return;
+    if (socket.id !== lobby.hostId) return;
+
+    lobby.chatQueueIndex++;
+    if (lobby.chatQueueIndex >= lobby.players.length) lobby.chatQueueIndex = 0;
+
+    io.to(lobbyCode).emit('chatTurn', lobby.players[lobby.chatQueueIndex].id);
   });
 
   socket.on('kickPlayer', ({ lobbyCode, playerId }) => {
     lobbyCode = lobbyCode.toUpperCase();
     const lobby = lobbies[lobbyCode];
     if (!lobby) return;
-    if (socket.id !== lobby.hostId) return; // tylko host może wyrzucać
+    if (socket.id !== lobby.hostId) return;
 
     lobby.players = lobby.players.filter(p => p.id !== playerId);
-
     io.sockets.sockets.get(playerId)?.leave(lobbyCode);
     io.to(playerId).emit('kicked');
+
+    // Popraw indeks tury, jeśli ktoś z niej wypadł
+    if (lobby.chatQueueIndex >= lobby.players.length) lobby.chatQueueIndex = 0;
 
     io.to(lobbyCode).emit('updatePlayers', {
       players: lobby.players,
       hostId: lobby.hostId,
     });
+
+    io.to(lobbyCode).emit('chatMessages', lobby.chatMessages);
+
+    io.to(lobbyCode).emit('chatTurn', lobby.players[lobby.chatQueueIndex]?.id);
   });
 
   socket.on('vote', ({ voted, lobbyCode }) => {
@@ -104,7 +176,6 @@ io.on('connection', (socket) => {
 
     lobby.votes[socket.id] = voted;
 
-    // Gdy wszyscy zagłosują, liczymy wyniki
     if (Object.keys(lobby.votes).length === lobby.players.length) {
       const votesCount = {};
       Object.values(lobby.votes).forEach(v => {
@@ -119,7 +190,6 @@ io.on('connection', (socket) => {
         }
       }
 
-      // Sprawdź czy wyrzucony jest impostorem
       const impostor = lobby.impostor.name;
       let resultMsg = '';
       if (votedOut === impostor) {
@@ -129,7 +199,6 @@ io.on('connection', (socket) => {
       }
 
       io.to(lobbyCode).emit('result', resultMsg);
-      // reset lobby
       lobby.started = false;
       lobby.votes = {};
       lobby.impostor = null;
@@ -152,10 +221,16 @@ io.on('connection', (socket) => {
           continue;
         }
       }
+
+      if (lobby.chatQueueIndex >= lobby.players.length) lobby.chatQueueIndex = 0;
+
       io.to(code).emit('updatePlayers', {
         players: lobby.players,
         hostId: lobby.hostId,
       });
+
+      io.to(code).emit('chatMessages', lobby.chatMessages);
+      io.to(code).emit('chatTurn', lobby.players[lobby.chatQueueIndex]?.id);
     }
   });
 });
