@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Impostor Game</title>
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="/socket.io/socket.io.js"></script>
+    <script defer src="script.js"></script>
+</head>
+<body>
+  <div id="game">
+    <h1>Gra Impostora</h1>
+    <div id="lobby">
+      <input type="text" id="playerName" placeholder="Twoje imię" />
+      <input type="text" id="lobbyCode" placeholder="Kod pokoju" />
+      <button onclick="createLobby()">Stwórz lobby</button>
+      <button onclick="joinLobby()">Dołącz do lobby</button>
+    </div>
+    <div id="gameArea" style="display:none">
+      <h2 id="gameStatus"></h2>
+      <div id="wordDisplay"></div>
+      <div id="voteSection" style="display:none">
+        <h3>Głosuj na impostora:</h3>
+        <div id="playersList"></div>
+      </div>
+      <div id="result" style="display:none"></div>
+    </div>
+  </div>
+</body>
+</html>
