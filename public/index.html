@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gra Impostor</title>
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="/socket.io/socket.io.js"></script>
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <div id="main">
+    <div id="login">
+      <input type="text" id="name" placeholder="Twoje imię" />
+      <input type="text" id="lobbyCode" placeholder="Kod pokoju (opcjonalnie)" />
+      <button onclick="createLobby()">Stwórz Lobby</button>
+      <button onclick="joinLobby()">Dołącz do Lobby</button>
+    </div>
+    <div id="lobbyArea" style="display:none">
+      <h2>Lobby: <span id="codeDisplay"></span></h2>
+      <ul id="players"></ul>
+      <div id="hostControls" style="display:none">
+        <input type="text" id="wordInput" placeholder="Wpisz hasło gry" />
+        <button onclick="startGame()">Start</button>
+      </div>
+    </div>
+    <div id="gameArea" style="display:none">
+      <p id="roleInfo"></p>
+      <div id="chatArea"></div>
+      <div id="chatInputArea">
+        <input type="text" id="chatInput" placeholder="Napisz wiadomość" />
+        <button onclick="sendMessage()">Wyślij</button>
+      </div>
+      <div id="voteArea" style="display:none"></div>
+      <button onclick="skipVoting()">Pomiń głosowanie</button>
+      <input type="text" id="guessInput" placeholder="Zgadnij hasło (tylko impostor)" />
+      <button onclick="guessWord()">Zgadnij</button>
+      <p id="result"></p>
+    </div>
+  </div>
+</body>
+</html>
